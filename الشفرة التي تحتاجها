@@ -1,0 +1,234 @@
+1) backend/package.json
+{
+  "name": "admin-starter-app",
+  "version": "1.0.0",
+  "description": "Starter full-stack app with admin management using Node.js, Express and SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "sqlite3": "^5.1.4"
+  }
+}
+
+2) backend/server.js
+// npm install قبل التشغيل: npm install
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+
+const dbFile = path.resolve(__dirname, 'db.sqlite');
+let db = new sqlite3.Database(dbFile, (err) => { if (err) console.error(err); });
+
+function initDB() {
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => { if (err) console.error(err); });
+}
+function seedAdmin() {
+  const email = 'admin@example.com';
+  const password = 'Admin@123'; // مثال تعليمي فقط
+  db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+    if (err) { console.error(err); return; }
+    if (!row) {
+      const ph = bcrypt.hashSync(password, 10);
+      db.run('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)', [email, ph, 'admin']);
+      console.log('Seed admin created: ' + email);
+    }
+  });
+}
+
+db.serialize(() => {
+  initDB();
+  seedAdmin();
+});
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
+  db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+    if (!row) return res.status(401).json({ error: 'Invalid credentials' });
+    const valid = bcrypt.compareSync(password, row.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = jwt.sign({ userId: row.id, role: row.role }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: row.id, email: row.email, role: row.role } });
+  });
+});
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+  jwt.verify(token, JWT_SECRET, (err, payload) => {
+    if (err) return res.status(403).json({ error: 'Invalid token' });
+    req.user = payload;
+    next();
+  });
+}
+function adminOnly(req, res, next) {
+  if (req.user && req.user.role === 'admin') return next();
+  res.status(403).json({ error: 'Admin only' });
+}
+
+app.post('/api/admin/add', authMiddleware, adminOnly, (req, res) => {
+  const { email, password, role } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Missing data' });
+  const hash = bcrypt.hashSync(password, 10);
+  const userRole = role === 'admin' ? 'admin' : 'user';
+  db.run('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)', [email, hash, userRole], function(err) {
+    if (err) {
+      if (err.code === 'SQLITE_CONSTRAINT') {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
+      return res.status(500).json({ error: 'DB error' });
+    }
+    res.json({ id: this.lastID, email, role: userRole });
+  });
+});
+
+app.get('/api/admin/list', authMiddleware, adminOnly, (req, res) => {
+  db.all('SELECT id, email, role, created_at FROM users WHERE role IN (?, ?)', ['admin', 'user'], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+    res.json({ users: rows });
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+3) backend/public/index.html
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Starter Panel</title>
+</head>
+<body>
+  <h1>Admin Management</h1>
+
+  <div id="auth">
+    <h2>Login</h2>
+    <input id="email" placeholder="Email" /><br/>
+    <input id="password" placeholder="Password" type="password" /><br/>
+    <button onclick="login()">Login</button>
+    <div id="loginMsg" style="color:red"></div>
+  </div>
+
+  <div id="panel" style="display:none">
+    <h2>Admin Panel</h2>
+
+    <h3>Add User</h3>
+    <input id="newEmail" placeholder="Email" /><br/>
+    <input id="newPassword" placeholder="Password" type="password" /><br/>
+    <select id="newRole">
+      <option value="admin">Admin</option>
+      <option value="user">User</option>
+    </select><br/>
+    <button onclick="addUser()">Add</button>
+    <div id="addMsg" style="color:green"></div>
+
+    <h3>Users</h3>
+    <button onclick="loadUsers()">Refresh</button>
+    <ul id="userList"></ul>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    let token = localStorage.getItem('jwt') || '';
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const res = await fetch(API_BASE + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        token = data.token;
+        localStorage.setItem('jwt', token);
+        document.getElementById('auth').style.display = 'none';
+        document.getElementById('panel').style.display = 'block';
+        await loadUsers();
+      } else {
+        document.getElementById('loginMsg').innerText = data.error || 'Login failed';
+      }
+    }
+
+    async function addUser() {
+      const email = document.getElementById('newEmail').value;
+      const password = document.getElementById('newPassword').value;
+      const role = document.getElementById('newRole').value;
+      const res = await fetch(API_BASE + '/admin/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ email, password, role })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('addMsg').innerText = 'User added: ' + data.email;
+        await loadUsers();
+      } else {
+        document.getElementById('addMsg').innerText = data.error || 'Error';
+      }
+    }
+
+    async function loadUsers() {
+      const res = await fetch(API_BASE + '/admin/list', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      const ul = document.getElementById('userList');
+      ul.innerHTML = '';
+      if (res.ok) {
+        data.users.forEach(u => {
+          const li = document.createElement('li');
+          li.textContent = `${u.email} (${u.role})`;
+          ul.appendChild(li);
+        });
+      }
+    }
+
+    window.onload = () => {
+      if (token) {
+        document.getElementById('auth').style.display = 'none';
+        document.getElementById('panel').style.display = 'block';
+        loadUsers();
+      } else {
+        document.getElementById('auth').style.display = 'block';
+        document.getElementById('panel').style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
+
+4) backend/.env (مثال)
+JWT_SECRET=your-super-secret-key
