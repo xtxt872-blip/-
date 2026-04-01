@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>تواصل - الشبكة الاجتماعية المتطورة</title>
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/json,{
+  \"name\":\"تواصل - شبكة اجتماعية\",
+  \"short_name\":\"تواصل\",
+  \"display\":\"standalone\",
+  \"background_color\":\"#0f172a\",
+  \"theme_color\":\"#3b82f6\",
+  \"icons\":[{
+    \"src\":\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle fill='%233b82f6' cx='50' cy='50' r='50'/%3E%3Ctext fill='white' x='50' y='67' text-anchor='middle' font-size='50'%3E🤝%3C/text%3E%3C/svg%3E\",
+    \"sizes\":\"any\",
+    \"type\":\"image/svg+xml\"
+  }]
+}">
+<style>
+  * {
+    box-sizing: border-box;
+    font-family: system-ui, 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+  }
+  body {
+    margin: 0;
+    background: #0f172a;
+    color: #f1f5f9;
+    padding-bottom: 220px; /* space for chat */
+  }
+  header {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #3b82f680;
+    padding: 16px 20px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    letter-spacing: 0.5px;
+  }
+  header span {
+    background: linear-gradient(45deg, #60a5fa, #c084fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .container {
+    padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #1e293b;
+    border-radius: 24px;
+    padding: 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    border: 1px solid #334155;
+    transition: transform 0.1s ease;
+  }
+  input, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    color: white;
+    font-size: 0.95rem;
+    margin-top: 8px;
+    outline: none;
+    transition: 0.2s;
+  }
+  input:focus, textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #3b82f640;
+  }
+  button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 40px;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.85rem;
+  }
+  button:hover {
+    background: #2563eb;
+    transform: scale(0.97);
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #3b82f6;
+    color: #90cdf4;
+  }
+  .trend {
+    background: linear-gradient(95deg, #1e1b4b, #2d3a5e);
+    padding: 12px 16px;
+    border-radius: 28px;
+    margin-bottom: 24px;
+    border-right: 4px solid #facc15;
+  }
+  .trend h3 {
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #trendList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+  #trendList li {
+    background: #0f172acc;
+    padding: 6px 14px;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    backdrop-filter: blur(2px);
+    border: 1px solid #facc1550;
+  }
+  .post {
+    background: #1e293b;
+    border-radius: 24px;
+    padding: 16px;
+    margin-bottom: 18px;
+    border: 1px solid #334155;
+    transition: all 0.2s;
+  }
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-weight: bold;
+    border-bottom: 1px dashed #475569;
+    padding-bottom: 6px;
+  }
+  .post-avatar {
+    background: #3b82f6;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  .post-content {
+    margin: 12px 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .media-preview {
+    margin: 12px 0;
+    border-radius: 20px;
+    overflow: hidden;
+    max-height: 320px;
+    display: flex;
+    justify-content: center;
+  }
+  img, video {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 20px;
+    object-fit: cover;
+  }
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0 8px;
+    flex-wrap: wrap;
+  }
+  .comments {
+    background: #0f172a70;
+    border-radius: 20px;
+    padding: 8px 12px;
+    margin-top: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .comments div {
+    background: #111827;
+    margin: 6px 0;
+    padding: 6px 10px;
+    border-radius: 18px;
+    font-size: 0.85rem;
+  }
+  /* chat area fixed bottom */
+  .chat-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #020617e6;
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #3b82f6;
+    padding: 12px 16px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    z-index: 200;
+  }
+  .chat-input-area {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .chat-input-area input {
+    flex: 1;
+    margin: 0;
+    background: #0f172a;
+  }
+  #chatBox {
+    max-height: 140px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 5px;
+    font-size: 0.85rem;
+    background: #0f172a60;
+    border-radius: 20px;
+  }
+  #chatBox div {
+    padding: 6px 12px;
+    border-bottom: 1px solid #334155;
+  }
+  .file-label {
+    background: #334155;
+    padding: 8px 12px;
+    border-radius: 28px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  @media (max-width: 640px) {
+    .container { padding: 12px; }
+    button { padding: 8px 14px; }
+  }
+  .trend-loading {
+    opacity: 0.7;
+    transition: 0.2s;
+  }
+</style>
+</head>
+<body>
+
+<header>✨ <span>تواصل</span> • شبكتك الذكية</header>
+
+<div class="container">
+  <!-- لوحة المستخدم -->
+  <div class="card">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <input id="username" placeholder="اسمك المستعار" value="مسافر">
+      <button onclick="app.login()">🚪 دخول</button>
+      <span id="userDisplay" style="background:#0f172a; padding:6px 12px; border-radius:40px;">👤 زائر</span>
+    </div>
+  </div>
+
+  <!-- إنشاء منشور -->
+  <div class="card">
+    <textarea id="postText" rows="2" placeholder="ماذا تفكر؟ شارك نص، صورة أو فيديو..."></textarea>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
+      <input type="file" id="fileInput" accept="image/*,video/*" style="display:none">
+      <button class="btn-outline" onclick="document.getElementById('fileInput').click()">📎 ميديا</button>
+      <span id="fileName" style="font-size:12px; color:#94a3b8;"></span>
+      <button onclick="app.createPostFromUI()">📢 نشر</button>
+      <button onclick="app.voicePost()">🎤 صوتي</button>
+    </div>
+  </div>
+
+  <!-- قسم الترندات المتزامنة (async) -->
+  <div id="trendsContainer" class="trend">
+    <h3>🔥 الترندات الحية <span id="trendSpinner" style="font-size:12px;">🔄</span></h3>
+    <ul id="trendList"><li>⏳ جاري تحديث الترندات...</li></ul>
+  </div>
+
+  <!-- عرض المنشورات -->
+  <div id="feed"></div>
+</div>
+
+<!-- الشات المثبت -->
+<div class="chat-panel">
+  <div id="chatBox"></div>
+  <div class="chat-input-area">
+    <input type="text" id="chatInput" placeholder="رسالة فورية...">
+    <button onclick="app.sendChatMessage()">إرسال</button>
+  </div>
+</div>
+
+<script>
+// --------------------------------------------------------------
+// تطبيق متطور مع تخزين محلي (محاكاة سيرفر) + ترندات غير متزامنة
+// --------------------------------------------------------------
+const app = (function() {
+  // ---------- البيانات الأساسية ----------
+  let posts = [];           // مصفوفة المنشورات
+  let currentUser = "زائر";
+  let chatMessages = [];    // تخزين رسائل الشات
+  
+  // مساعدة للتخزين
+  const STORAGE_KEYS = {
+    POSTS: 'tawasol_posts',
+    CHAT: 'tawasol_chat',
+    USER: 'tawasol_user'
+  };
+
+  // تحميل البيانات من localStorage (محاكاة سيرفر)
+  function loadData() {
+    const storedPosts = localStorage.getItem(STORAGE_KEYS.POSTS);
+    if (storedPosts) {
+      posts = JSON.parse(storedPosts);
+    } else {
+      // بيانات افتراضية لجذب الانتباه
+      posts = [
+        {
+          id: Date.now() + 1,
+          user: "أحمد",
+          text: "أول منشور في تواصل! 🚀 جربوا مشاركة الصور والفيديو",
+          media: null,
+          mediaType: null,
+          likes: 5,
+          comments: [{ user: "سارة", text: "مبروك التطبيق 🤩" }],
+          timestamp: Date.now() - 3600000
+        },
+        {
+          id: Date.now() + 2,
+          user: "نورهان",
+          text: "#تحدي_الأسبوع مين عنده فكرة إبداعية؟",
+          media: null,
+          mediaType: null,
+          likes: 3,
+          comments: [],
+          timestamp: Date.now() - 7200000
+        }
+      ];
+      savePosts();
+    }
+    
+    const storedChat = localStorage.getItem(STORAGE_KEYS.CHAT);
+    if (storedChat) {
+      chatMessages = JSON.parse(storedChat);
+    } else {
+      chatMessages = [{ user: "النظام", text: "مرحباً في الدردشة العامة 😊" }];
+      saveChat();
+    }
+    
+    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+    if (storedUser) {
+      currentUser = storedUser;
+      document.getElementById("username").value = currentUser;
+      updateUserDisplay();
+    }
+  }
+  
+  function savePosts() {
+    localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+  }
+  
+  function saveChat() {
+    localStorage.setItem(STORAGE_KEYS.CHAT, JSON.stringify(chatMessages));
+  }
+  
+  function updateUserDisplay() {
+    const displaySpan = document.getElementById("userDisplay");
+    if (displaySpan) displaySpan.innerHTML = `👤 ${currentUser}`;
+  }
+  
+  // عرض المنشورات مع ربط الأحداث
+  function renderFeed() {
+    const feedDiv = document.getElementById("feed");
+    if (!feedDiv) return;
+    if (posts.length === 0) {
+      feedDiv.innerHTML = `<div class="card" style="text-align:center;">✨ لا منشورات بعد، كن أول من ينشر!</div>`;
+      return;
+    }
+    // ترتيب تنازلي حسب التاريخ
+    const sorted = [...posts].sort((a,b) => b.timestamp - a.timestamp);
+    feedDiv.innerHTML = "";
+    sorted.forEach(post => {
+      const postDiv = document.createElement("div");
+      postDiv.className = "post";
+      postDiv.setAttribute("data-id", post.id);
+      
+      // معالجة الوسائط
+      let mediaHtml = "";
+      if (post.media && post.mediaType) {
+        if (post.mediaType.startsWith("video")) {
+          mediaHtml = `<div class="media-preview"><video controls src="${post.media}"></video></div>`;
+        } else if (post.mediaType.startsWith("image")) {
+          mediaHtml = `<div class="media-preview"><img src="${post.media}" alt="مرفق"></div>`;
+        }
+      }
+      
+      // بناء التعليقات
+      let commentsHtml = `<div class="comments">`;
+      if (post.comments && post.comments.length) {
+        post.comments.forEach(c => {
+          commentsHtml += `<div><strong>${escapeHtml(c.user)}</strong>: ${escapeHtml(c.text)}</div>`;
+        });
+      } else {
+        commentsHtml += `<div style="opacity:0.6;">💬 لا توجد تعليقات بعد</div>`;
+      }
+      commentsHtml += `</div>`;
+      
+      postDiv.innerHTML = `
+        <div class="post-header">
+          <div class="post-avatar">${post.user.charAt(0).toUpperCase()}</div>
+          <div><strong>${escapeHtml(post.user)}</strong> <span style="font-size:12px; color:#94a3b8;">${timeAgo(post.timestamp)}</span></div>
+        </div>
+        <div class="post-content">${escapeHtml(post.text).replace(/#(\w+)/g, '<span style="color:#facc15;">#$1</span>')}</div>
+        ${mediaHtml}
+        <div class="actions">
+          <button class="like-btn" data-id="${post.id}">👍 ${post.likes || 0}</button>
+          <button class="comment-btn" data-id="${post.id}">💬 تعليق</button>
+          <button class="ai-btn" data-id="${post.id}">🤖 اقتراح ذكي</button>
+        </div>
+        ${commentsHtml}
+      `;
+      feedDiv.appendChild(postDiv);
+    });
+    
+    // ربط الأحداث ديناميكياً
+    document.querySelectorAll('.like-btn').forEach(btn => {
+      btn.removeEventListener('click', handleLike);
+      btn.addEventListener('click', handleLike);
+    });
+    document.querySelectorAll('.comment-btn').forEach(btn => {
+      btn.removeEventListener('click', handleComment);
+      btn.addEventListener('click', handleComment);
+    });
+    document.querySelectorAll('.ai-btn').forEach(btn => {
+      btn.removeEventListener('click', handleAIComment);
+      btn.addEventListener('click', handleAIComment);
+    });
+  }
+  
+  function handleLike(e) {
+    const postId = parseInt(e.currentTarget.getAttribute('data-id'));
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      post.likes = (post.likes || 0) + 1;
+      savePosts();
+      renderFeed();
+      // تحديث الترندات بعد التفاعل (async)
+      refreshTrendsAsync();
+    }
+  }
+  
+  function handleComment(e) {
+    const postId = parseInt(e.currentTarget.getAttribute('data-id'));
+    const commentText = prompt("✏️ اكتب تعليقك:");
+    if (!commentText) return;
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      if (!post.comments) post.comments = [];
+      post.comments.push({ user: currentUser, text: commentText });
+      savePosts();
+      renderFeed();
+      refreshTrendsAsync(); // تحديث الترندات لأن النشاط يغير المحتوى
+    }
+  }
+  
+  function handleAIComment(e) {
+    const postId = parseInt(e.currentTarget.getAttribute('data-id'));
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    const suggestions = [
+      "🔥 رائع! استمر في الإبداع",
+      "😍 منشور مميز، شكراً للمشاركة",
+      "💡 هل فكرت في إضافة هاشتاج #تواصل?",
+      "✨ هذا المنشور يستحق الانتشار",
+      "🚀 دعنا نشارك الفكرة مع الأصدقاء"
+    ];
+    let aiMsg = suggestions[Math.floor(Math.random() * suggestions.length)];
+    if (post.text.includes("تحدي")) aiMsg = "🏆 تحدي رائع! أنا متحمس للمشاركة 🤖";
+    if (!post.comments) post.comments = [];
+    post.comments.push({ user: "🤖 AI مساعد", text: aiMsg });
+    savePosts();
+    renderFeed();
+  }
+  
+  // حساب الترندات بناءً على الكلمات الأكثر تكراراً في المنشورات (async simulation)
+  function computeTrendsFromPosts() {
+    const stopWords = ["في", "من", "عن", "على", "الى", "الي", "و", "أو", "مع", "هذا", "هذه", "كان", "ال"];
+    const wordCount = new Map();
+    posts.forEach(post => {
+      const words = post.text.toLowerCase().split(/\s+/);
+      words.forEach(word => {
+        if (word.length < 3) return;
+        if (stopWords.includes(word)) return;
+        if (word.startsWith("#")) {
+          const tag = word;
+          wordCount.set(tag, (wordCount.get(tag) || 0) + 2);
+        } else {
+          wordCount.set(word, (wordCount.get(word) || 0) + 1);
+        }
+      });
+    });
+    // إضافة نشاط الهاشتاجات الشائعة
+    let trendsArray = Array.from(wordCount.entries())
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(item => item[0]);
+    
+    if (trendsArray.length === 0) {
+      trendsArray = ["#تواصل_الآن", "إبداع", "منشورات ساخنة", "تحدي الجديد", "تفاعل"];
+    } else {
+      // مزج بعض اللمسات العصرية
+      trendsArray = trendsArray.map(t => t.startsWith("#") ? t : `#${t}`);
+    }
+    // إضافة ترندات مبتكرة مستوحاة من المحتوى
+    if (posts.some(p => p.media)) trendsArray.unshift("📸 ميديا ساخنة");
+    if (posts.reduce((sum,p) => sum + (p.likes||0),0) > 5) trendsArray.push("🔥 تفاعل كبير");
+    return [...new Set(trendsArray.slice(0,5))];
+  }
+  
+  // تحديث الترندات بشكل غير متزامن (محاكاة طلب API)
+  let trendUpdateTimeout = null;
+  function refreshTrendsAsync() {
+    const trendListElem = document.getElementById("trendList");
+    const spinner = document.getElementById("trendSpinner");
+    if (spinner) spinner.style.opacity = "1";
+    if (trendListElem) trendListElem.innerHTML = `<li>⚡ تحليل الترندات...</li>`;
+    
+    // محاكاة تأخير الشبكة (async)
+    clearTimeout(trendUpdateTimeout);
+    trendUpdateTimeout = setTimeout(() => {
+      const freshTrends = computeTrendsFromPosts();
+      const trendContainer = document.getElementById("trendList");
+      if (trendContainer) {
+        trendContainer.innerHTML = "";
+        freshTrends.forEach(t => {
+          const li = document.createElement("li");
+          li.innerText = t;
+          trendContainer.appendChild(li);
+        });
+      }
+      if (spinner) spinner.style.opacity = "0.5";
+    }, 400); // غير متزامن حقيقي -> يحاكي استجابة السيرفر
+  }
+  
+  // إنشاء منشور جديد مع دعم الملفات (base64 للتخزين)
+  function createPost(content, fileBase64 = null, fileType = null) {
+    if (!content && !fileBase64) return false;
+    const newId = Date.now();
+    const newPost = {
+      id: newId,
+      user: currentUser,
+      text: content || "",
+      media: fileBase64,
+      mediaType: fileType,
+      likes: 0,
+      comments: [],
+      timestamp: Date.now()
+    };
+    posts.unshift(newPost);
+    savePosts();
+    renderFeed();
+    // تحديث الترندات بعد النشر فورياً بشكل غير متزامن
+    refreshTrendsAsync();
+    return true;
+  }
+  
+  // معالجة الملف وتحويله إلى base64 (لتخزين دائم)
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // من واجهة المستخدم
+  async function createPostFromUI() {
+    const textarea = document.getElementById("postText");
+    const content = textarea.value.trim();
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+    let mediaBase64 = null;
+    let mediaType = null;
+    
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert("الملف كبير جداً (حد أقصى 10MB)");
+        return;
+      }
+      try {
+        mediaBase64 = await fileToBase64(file);
+        mediaType = file.type;
+      } catch(e) {
+        alert("فشل قراءة الملف");
+        return;
+      }
+    }
+    
+    if (!content && !mediaBase64) {
+      alert("اكتب نصاً أو أضف ميديا");
+      return;
+    }
+    
+    await createPost(content, mediaBase64, mediaType);
+    // تنظيف الحقول
+    textarea.value = "";
+    fileInput.value = "";
+    document.getElementById("fileName").innerText = "";
+  }
+  
+  // تسجيل الدخول
+  function login() {
+    const inputName = document.getElementById("username").value.trim();
+    if (inputName) {
+      currentUser = inputName;
+    } else {
+      currentUser = "زائر_" + Math.floor(Math.random() * 1000);
+    }
+    localStorage.setItem(STORAGE_KEYS.USER, currentUser);
+    updateUserDisplay();
+    alert(`مرحباً ${currentUser} 🎉`);
+    renderFeed(); // لإظهار الأسماء الجديدة في التعليقات
+  }
+  
+  // تحويل الصوت إلى منشور
+  function voicePost() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert("المتصفح لا يدعم الإدخال الصوتي");
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ar-SA";
+    recognition.interimResults = false;
+    recognition.start();
+    recognition.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript) {
+        await createPost("🎙️ " + transcript, null, null);
+      }
+    };
+    recognition.onerror = () => alert("حدث خطأ في التعرف على الصوت");
+  }
+  
+  // شات فوري مع حفظ
+  function sendChatMessage() {
+    const input = document.getElementById("chatInput");
+    const msg = input.value.trim();
+    if (!msg) return;
+    chatMessages.push({ user: currentUser, text: msg, time: Date.now() });
+    saveChat();
+    renderChat();
+    input.value = "";
+  }
+  
+  function renderChat() {
+    const chatContainer = document.getElementById("chatBox");
+    if (!chatContainer) return;
+    chatContainer.innerHTML = "";
+    chatMessages.slice(-30).forEach(msg => {
+      const msgDiv = document.createElement("div");
+      msgDiv.innerHTML = `<strong>${escapeHtml(msg.user)}</strong>: ${escapeHtml(msg.text)}`;
+      chatContainer.appendChild(msgDiv);
+    });
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+  
+  // تحديث الترندات كل 15 ثانية تلقائياً (غير متزامن)
+  function autoTrendsInterval() {
+    setInterval(() => {
+      refreshTrendsAsync();
+    }, 15000);
+  }
+  
+  // مساعدة html escape
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+  
+  function timeAgo(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return "الآن";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} دقيقة`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} ساعة`;
+    const days = Math.floor(hours / 24);
+    return `${days} يوم`;
+  }
+  
+  // ربط حدث اختيار الملف لعرض الاسم
+  function bindFileEvents() {
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput) {
+      fileInput.addEventListener("change", function(e) {
+        const nameSpan = document.getElementById("fileName");
+        if (this.files && this.files[0]) {
+          nameSpan.innerText = `📎 ${this.files[0].name.substring(0, 25)}`;
+        } else {
+          nameSpan.innerText = "";
+        }
+      });
+    }
+  }
+  
+  // تهيئة كاملة
+  function init() {
+    loadData();
+    renderFeed();
+    renderChat();
+    updateUserDisplay();
+    bindFileEvents();
+    refreshTrendsAsync();   // ترندات أولية غير متزامنة
+    autoTrendsInterval();    // تحديث دوري
+    // إظهار أن السيرفر محاكى عبر localStorage
+    console.log("✅ تطبيق تواصل يعمل بنظام تخزين محلي (محاكاة سيرفر) وترندات لا متزامنة");
+  }
+  
+  // API العامة
+  return {
+    init,
+    login,
+    createPostFromUI,
+    voicePost,
+    sendChatMessage,
+    refreshTrendsAsync
+  };
+})();
+
+// تشغيل التطبيق بعد تحميل الصفحة
+window.addEventListener("DOMContentLoaded", () => {
+  app.init();
+  // إتاحة الكائنات العامة للدوال المباشرة في HTML (للتوافق)
+  window.app = app;
+});
+</script>
+</body>
+</html>
